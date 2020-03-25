@@ -23,7 +23,8 @@ A number of processing and visualisation scripts  can be found in the challenge 
 
 ## INTRODUCTION
 
-The task of this challenge is to predict aspects the activities of residents within a smart home based only on observed sensor data. Sensor data are obtained from the following three sensing modalities:
+The task of this challenge is to predict aspects the activities of residents within a smart home based only on 
+observed sensor data. Sensor data are obtained from the following three sensing modalities:
 
 * A wrist-worn accelerometer
 * Video + Depth (RGB-D)
@@ -31,11 +32,16 @@ The task of this challenge is to predict aspects the activities of residents wit
 
 The data and file formats are described in the following section. 
 
-The train and test subsets can be found in the train.zip and test.zip files, and metadata.zip contains meta data regarding the sensor names, room names, activity names. supplementary.zip contains floor-plans of the house, images from the three cameras, and the script used for the training data collection
+The train and test subsets can be found in the train.zip and test.zip files, and metadata.zip contains meta data
+regarding the sensor names, room names, activity names. supplementary.zip contains floor-plans of the house, 
+images from the three cameras, and the script used for the training data collection
 
 ## DATA
 
-Training data and testing data can be found in the ‘train’ and ‘test’ subdirectories respectively. The recorded data are collected under unique codes (each recording will be referred to as a ‘data sequence’). Timestamps are rebased to be relative to the start of the sequences, i.e. for a sequence of length 10 seconds, all timestamps will be within the range 0-10 seconds. 
+Training data and testing data can be found in the ‘train’ and ‘test’ subdirectories respectively. 
+The recorded data are collected under unique codes (each recording will be referred to as a ‘data sequence’). 
+Timestamps are rebased to be relative to the start of the sequences, i.e. for a sequence of length 10 seconds, 
+all timestamps will be within the range 0-10 seconds. 
 
 Each data sequence contains the following files:
 
@@ -51,7 +57,9 @@ The following files are also available within the training directory:
 * annotations_*.csv
 * locations_*.csv
 
-The data from annotations_*.csv is used to create the targets.csv file, and locations_\*.csv files are available for participants that want to model indoor localisation. These are only available for the training set.
+The data from annotations_*.csv is used to create the targets.csv file, and locations_\*.csv files are 
+available for participants that want to model indoor localisation. These are only available for the 
+training set.
 
 The dataset may be downloaded from data.bris: 
 
@@ -59,13 +67,19 @@ The dataset may be downloaded from data.bris:
 
 ### targets.csv (available in train only)
 
-This file contains the probabilistic targets for classification. Multiple annotators may have annotated each sequence, and this file aggregates all of the annotations over one second windows. The mean duration of each label within this window is used as the target variable. 
+This file contains the probabilistic targets for classification. Multiple annotators may have annotated each 
+sequence, and this file aggregates all of the annotations over one second windows. The mean duration of each 
+label within this window is used as the target variable. 
 
 The following 20 activities are labelled:
 
-`annotation_names = ('a_ascend', 'a_descend', 'a_jump', 'a_loadwalk', 'a_walk', 'p_bent', 'p_kneel', 'p_lie', 'p_sit', 'p_squat', 'p_stand', 't_bend', 't_kneel_stand', 't_lie_sit', 't_sit_lie', 't_sit_stand', 't_stand_kneel', 't_stand_sit', 't_straighten', 't_turn')`
+`annotation_names = ('a_ascend', 'a_descend', 'a_jump', 'a_loadwalk', 'a_walk', 'p_bent', 'p_kneel', 
+	'p_lie', 'p_sit', 'p_squat', 'p_stand', 't_bend', 't_kneel_stand', 't_lie_sit', 't_sit_lie', 't_sit_stand', 
+	't_stand_kneel', 't_stand_sit', 't_straighten', 't_turn')`
 
-The prefix ‘a_’ indicates an ambulation activity (i.e. an activity consisting of continuing movement), ‘p_’ annotations indicate static postures (i.e. times when the participants are stationary), and ‘t_’ annotations indicate posture-to-posture transitions.
+The prefix ‘a_’ indicates an ambulation activity (i.e. an activity consisting of continuing movement), 
+‘p_’ annotations indicate static postures (i.e. times when the participants are stationary), 
+and ‘t_’ annotations indicate posture-to-posture transitions.
 
 This file contains of 22 columns:
 
@@ -77,7 +91,8 @@ This file contains of 22 columns:
 
 ### pir.csv (available for train and test)
 
-This file contains the start time and duration for all PIR sensors in the smart environment. A PIR sensor is located in every room:
+This file contains the start time and duration for all PIR sensors in the smart environment. 
+A PIR sensor is located in every room:
 
 `pir_locations = ('bath', 'bed1', 'bed2', 'hall', 'kitchen', 'living', 'stairs', 'study', 'toilet')`
 
@@ -96,7 +111,9 @@ The acceleration file consists of eight columns:
 
 * t: this is the time of the recording (relative to the start of the sequence)
 * x/y/z: these are the acceleration values recorded on the x/y/z axes of the accelerometer.
-* Kitchen_AP/Lounge_AP/Upstairs_AP/Study_AP: these specify the received signal strength (RSSI) of the acceleration signal as received by the access kitchen/lounge/upstairs access points. Empty values indicate that the access point did not receive the packet.
+* Kitchen_AP/Lounge_AP/Upstairs_AP/Study_AP: these specify the received signal strength (RSSI) 
+	of the acceleration signal as received by the access kitchen/lounge/upstairs access points. 
+	Empty values indicate that the access point did not receive the packet.
 
 
 
