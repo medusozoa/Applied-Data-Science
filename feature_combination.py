@@ -13,7 +13,7 @@ VIDEO_2D_X_COLS = ['centre_2d_x', 'bb_2d_br_x', 'bb_2d_tl_x']
 VIDEO_2D_Y_COLS = ['centre_2d_y', 'bb_2d_br_y', 'bb_2d_tl_y']
 
 VIDEO_3D_COLS = ['centre_3d_x', 'centre_3d_y', 'centre_3d_z', 'bb_3d_brb_x', 'bb_3d_brb_y', 'bb_3d_brb_z',
-                   'bb_3d_flt_x','bb_3d_flt_y', 'bb_3d_flt_z']
+                 'bb_3d_flt_x','bb_3d_flt_y', 'bb_3d_flt_z']
 
 TRAIN_PATH = r'data/train'
 TEST_PATH = r'data/test'
@@ -30,7 +30,7 @@ LOCATION_QUADRANTS = {HALLWAY: (1, 1),
 
 # reshapes data into 1 second intervals, averages into 1 second bins, fills NaN for missing seconds
 # has a start and end that are a second apart as is data in targets.csv
-def video_align_time(series):
+def series_align_time(series):
     series.insert(2, 'timestamp', pd.to_datetime(series['t'], unit='s'))
     del series['t']
 
@@ -68,7 +68,7 @@ def prepare_video_files(base_path, sample_name):
     videos = {}
     for location in LOCATION_QUADRANTS:
         video = pd.read_csv(f"{base_path}/{sample_name}/video_{location}.csv")
-        video = video_align_time(video)
+        video = series_align_time(video)
         video = video_transform_2d_grid(video, location)
         videos[location] = video
 
@@ -76,7 +76,7 @@ def prepare_video_files(base_path, sample_name):
 
 
 # combines the already aligned features into a single data frame
-def combine_features(targets, videos):
+def combine_with_video_features(targets, videos):
     data = pd.merge(targets, videos[HALLWAY], how='left',
                     on=['start', 'end'],
                     left_index=True, right_index=False,
@@ -99,13 +99,37 @@ def combine_features(targets, videos):
     return data
 
 
+def prepare_acceleration(base_path, sample_name):
+    acceleration = pd.read_csv(f"{base_path}/{sample_name}/acceleration.csv")
+    acceleration = series_align_time(acceleration)
+    acceleration.rename(columns={'x': 'acceleration_x',
+                                 'y': 'acceleration_y',
+                                 'z': 'acceleration_z'},
+                        inplace=True)
+    acceleration.fillna(0, inplace=True)
+    return acceleration
+
+
+def combine_with_acceleration_features(targets, acceleration):
+    data = pd.merge(targets, acceleration, how='left',
+                    on=['start', 'end'],
+                    left_index=True, right_index=False,
+                    copy=True, indicator=False,
+                    validate='one_to_one')
+    data.reset_index(drop=True, inplace=True)
+    return data
+
+
 # returns a prerprocessed dataframe of all features for a specific training sample
 def prepare_training_sample(base_path, sample_name):
     targets = pd.read_csv(f"{base_path}/{sample_name}/targets.csv")
     targets.dropna(how='all', subset=ANNOTATION_NAMES, inplace=True)
-    videos = prepare_video_files(base_path, sample_name)
 
-    sample_data = combine_features(targets, videos)
+    videos = prepare_video_files(base_path, sample_name)
+    sample_data = combine_with_video_features(targets, videos)
+
+    acceleration = prepare_acceleration(base_path, sample_name)
+    sample_data = combine_with_acceleration_features(sample_data, acceleration)
 
     return sample_data
 
