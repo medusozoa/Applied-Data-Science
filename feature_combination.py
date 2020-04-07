@@ -12,6 +12,9 @@ VIDEO_VALUE_COLS = ['centre_2d_x', 'centre_2d_y', 'bb_2d_br_x', 'bb_2d_br_y', 'b
 VIDEO_2D_X_COLS = ['centre_2d_x', 'bb_2d_br_x', 'bb_2d_tl_x']
 VIDEO_2D_Y_COLS = ['centre_2d_y', 'bb_2d_br_y', 'bb_2d_tl_y']
 
+VIDEO_3D_COLS = ['centre_3d_x', 'centre_3d_y', 'centre_3d_z', 'bb_3d_brb_x', 'bb_3d_brb_y', 'bb_3d_brb_z',
+                   'bb_3d_flt_x','bb_3d_flt_y', 'bb_3d_flt_z']
+
 TRAIN_PATH = r'data/train'
 TEST_PATH = r'data/test'
 
@@ -55,6 +58,11 @@ def video_fillna_2d(series):
     return series
 
 
+def video_fillna_3d(series):
+    series[VIDEO_3D_COLS] = series[VIDEO_3D_COLS].fillna(0)
+    return series
+
+
 # reads the different video CSVs and preprocesses them, returns them as a dict
 def prepare_video_files(base_path, sample_name):
     videos = {}
@@ -87,6 +95,7 @@ def combine_features(targets, videos):
     data.reset_index(inplace=True)
 
     data = video_fillna_2d(data)
+    data = video_fillna_3d(data)
     return data
 
 
@@ -115,4 +124,3 @@ def get_file_for_all_samples(path, file, preprocess_func):
 
     # Concatenate all data into one DataFrame
     return pd.concat(dfs, ignore_index=True)
-
