@@ -54,9 +54,8 @@ def video_transform_2d_grid(series, location):
 
 # absent video is put in the corner of the negative quadrant of the x,y space
 def video_fillna_2d(series):
-    row_indexer = series[ANNOTATION_NAMES].notna().all(axis=1)
-    series[VIDEO_2D_X_COLS] = series.loc[row_indexer, VIDEO_2D_X_COLS].fillna(-640)
-    series[VIDEO_2D_Y_COLS] = series.loc[row_indexer, VIDEO_2D_Y_COLS].fillna(-480)
+    series[VIDEO_2D_X_COLS] = series[VIDEO_2D_X_COLS].fillna(-640)
+    series[VIDEO_2D_Y_COLS] = series[VIDEO_2D_Y_COLS].fillna(-480)
 
     return series
 
@@ -123,8 +122,9 @@ def combine_with_acceleration_features(targets, acceleration):
 
 def prepare_pir(base_path, sample_name):
     pir = pd.read_csv(f"{base_path}/{sample_name}/pir.csv")
-    min_t = math.floor(pir['start'].min())
-    max_t = math.ceil(pir['end'].max())
+
+    min_t = math.floor(pir['start'].min()) if len(pir) > 0 else 0
+    max_t = math.ceil(pir['end'].max()) if len(pir) > 0 else 0
 
     intervals = pd.interval_range(start=min_t, end=max_t)
     data = pd.DataFrame(False, index=range(len(intervals)), columns=[f"pir_{x}" for x in PIR_LOCATIONS])
@@ -177,28 +177,88 @@ def prepare_training_sample(base_path, sample_name):
     return sample_data
 
 
-def get_training_samples_dict(base_path):
+def min_time_in_features(videos, acceleration, pir):
+    min_t = float('inf')
+
+    for video in videos.values():
+        min_t = min(min_t, video['start'].min())
+
+    min_t = min(min_t, acceleration['start'].min())
+
+    min_t = min(min_t, pir['start'].min())
+
+    return min_t
+
+
+def max_time_in_features(videos, acceleration, pir):
+    max_t = 0
+
+    for video in videos.values():
+        max_t = max(max_t, video['end'].max())
+
+    max_t = max(max_t, acceleration['end'].max())
+
+    max_t = max(max_t, pir['end'].max())
+
+    return max_t
+
+
+def prepare_test_sample(base_path, sample_name):
+    videos = prepare_video_files(base_path, sample_name)
+    acceleration = prepare_acceleration(base_path, sample_name)
+    pir = prepare_pir(base_path, sample_name)
+
+    min_t = math.floor(min_time_in_features(videos, acceleration, pir))
+    max_t = math.ceil(max_time_in_features(videos, acceleration, pir))
+
+    sample_data = pd.DataFrame(data={'start': range(min_t, max_t),
+                                     'end': range(min_t + 1, max_t + 1)})
+
+    sample_data = combine_with_video_features(sample_data, videos)
+    sample_data = combine_with_acceleration_features(sample_data, acceleration)
+    sample_data = combine_with_pir_features(sample_data, pir)
+
+    return sample_data
+
+
+def get_samples_dict(base_path, preprocessing_func):
     sample_dirs = os.listdir(base_path)
     sample_dirs.sort()
 
     dfs = {}
     for sample in sample_dirs:
-        df = prepare_training_sample(base_path, sample)
+        df = preprocessing_func(base_path, sample)
         dfs[sample] = df
 
     return dfs
 
 
-def get_training_samples_frame(base_path):
+def get_samples_frame(base_path, preprocessing_func):
     sample_dirs = os.listdir(base_path)
     sample_dirs.sort()
 
     dfs = []
     for sample in sample_dirs:
-        df = prepare_training_sample(base_path, sample)
+        df = preprocessing_func(base_path, sample)
         df.insert(0, 'sample', sample)
         df.insert(1, 'sample_index', df.index)
         dfs.append(df)
 
     # Concatenate all data into one DataFrame
     return pd.concat(dfs, ignore_index=True)
+
+
+def get_training_samples_dict(base_path):
+    return get_samples_dict(base_path, prepare_training_sample)
+
+
+def get_training_samples_frame(base_path):
+    return get_samples_frame(base_path, prepare_training_sample)
+
+
+def get_testing_samples_dict(base_path):
+    return get_samples_dict(base_path, prepare_test_sample)
+
+
+def get_testing_samples_frame(base_path):
+    return get_samples_frame(base_path, prepare_test_sample)
