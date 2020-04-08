@@ -144,7 +144,7 @@ def combine_with_pir_features(targets, pir):
                     copy=True, indicator=False,
                     validate='one_to_one')
     data.reset_index(drop=True, inplace=True)
-    data.fillna(False)
+    data.fillna(False, inplace=True)
     return data
 
 
@@ -165,14 +165,25 @@ def prepare_training_sample(base_path, sample_name):
     return sample_data
 
 
-def get_file_for_all_samples(path, file, preprocess_func):
-    sample_dirs = os.listdir(path)
+def get_training_samples_dict(base_path):
+    sample_dirs = os.listdir(base_path)
+    sample_dirs.sort()
+
+    dfs = {}
+    for sample in sample_dirs:
+        df = prepare_training_sample(base_path, sample)
+        dfs[sample] = df
+
+    return dfs
+
+
+def get_training_samples_frame(base_path):
+    sample_dirs = os.listdir(base_path)
     sample_dirs.sort()
 
     dfs = []
     for sample in sample_dirs:
-        df = pd.read_csv(f"{path}/{sample}/{file}")
-        df = preprocess_func(df)
+        df = prepare_training_sample(base_path, sample)
         df.insert(0, 'sample', sample)
         df.insert(1, 'sample_index', df.index)
         dfs.append(df)
