@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import math
 
 ANNOTATION_NAMES = ['a_ascend', 'a_descend', 'a_jump', 'a_loadwalk', 'a_walk', 'p_bent', 'p_kneel', 'p_lie', 'p_sit',
                     'p_squat', 'p_stand', 't_bend', 't_kneel_stand', 't_lie_sit', 't_sit_lie', 't_sit_stand',
@@ -27,6 +28,7 @@ LOCATION_QUADRANTS = {HALLWAY: (1, 1),
                       # none : (-1, -1)
                       }
 
+PIR_LOCATIONS = ['bath', 'bed1', 'bed2', 'hall', 'kitchen', 'living', 'stairs', 'study', 'toilet']
 
 # reshapes data into 1 second intervals, averages into 1 second bins, fills NaN for missing seconds
 # has a start and end that are a second apart as is data in targets.csv
@@ -102,11 +104,8 @@ def combine_with_video_features(targets, videos):
 def prepare_acceleration(base_path, sample_name):
     acceleration = pd.read_csv(f"{base_path}/{sample_name}/acceleration.csv")
     acceleration = series_align_time(acceleration)
-    acceleration.rename(columns={'x': 'acceleration_x',
-                                 'y': 'acceleration_y',
-                                 'z': 'acceleration_z'},
-                        inplace=True)
-    acceleration.fillna(0, inplace=True)
+    acceleration.columns = [f"acceleration_{str(col)}" if col not in ['start', 'end'] else str(col)
+                            for col in acceleration.columns]
     return acceleration
 
 
@@ -117,6 +116,35 @@ def combine_with_acceleration_features(targets, acceleration):
                     copy=True, indicator=False,
                     validate='one_to_one')
     data.reset_index(drop=True, inplace=True)
+    data.fillna(0, inplace=True)
+    return data
+
+
+def prepare_pir(base_path, sample_name):
+    pir = pd.read_csv(f"{base_path}/{sample_name}/pir.csv")
+    min_t = math.floor(pir['start'].min())
+    max_t = math.ceil(pir['end'].max())
+
+    intervals = pd.interval_range(start=min_t, end=max_t)
+    data = pd.DataFrame(False, index=range(len(intervals)), columns=[f"pir_{x}" for x in PIR_LOCATIONS])
+    for _, row in pir.iterrows():
+        data_row = f"pir_{row['name']}"
+        data[data_row] |= intervals.overlaps(pd.Interval(left=row['start'], right=row['end']))
+
+    data.insert(0, "start", intervals.left)
+    data.insert(1, "end", intervals.right)
+
+    return data
+
+
+def combine_with_pir_features(targets, pir):
+    data = pd.merge(targets, pir, how='left',
+                    on=['start', 'end'],
+                    left_index=True, right_index=False,
+                    copy=True, indicator=False,
+                    validate='one_to_one')
+    data.reset_index(drop=True, inplace=True)
+    data.fillna(False)
     return data
 
 
@@ -130,6 +158,9 @@ def prepare_training_sample(base_path, sample_name):
 
     acceleration = prepare_acceleration(base_path, sample_name)
     sample_data = combine_with_acceleration_features(sample_data, acceleration)
+
+    pir = prepare_pir(base_path, sample_name)
+    sample_data = combine_with_pir_features(sample_data, pir)
 
     return sample_data
 
