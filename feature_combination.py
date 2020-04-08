@@ -30,6 +30,7 @@ LOCATION_QUADRANTS = {HALLWAY: (1, 1),
 
 PIR_LOCATIONS = ['bath', 'bed1', 'bed2', 'hall', 'kitchen', 'living', 'stairs', 'study', 'toilet']
 
+
 # reshapes data into 1 second intervals, averages into 1 second bins, fills NaN for missing seconds
 # has a start and end that are a second apart as is data in targets.csv
 def series_align_time(series):
@@ -148,10 +149,21 @@ def combine_with_pir_features(targets, pir):
     return data
 
 
+def prepare_targets(base_path, sample_name):
+    targets = pd.read_csv(f"{base_path}/{sample_name}/targets.csv")
+    # targets.dropna(how='all', subset=ANNOTATION_NAMES, inplace=True)
+
+    first_idx = targets[ANNOTATION_NAMES].first_valid_index()
+    last_idx = targets[ANNOTATION_NAMES].last_valid_index()
+    targets = targets.loc[first_idx:last_idx]
+    targets.fillna(1.0 / len(ANNOTATION_NAMES), inplace=True)
+
+    return targets
+
+
 # returns a prerprocessed dataframe of all features for a specific training sample
 def prepare_training_sample(base_path, sample_name):
-    targets = pd.read_csv(f"{base_path}/{sample_name}/targets.csv")
-    targets.dropna(how='all', subset=ANNOTATION_NAMES, inplace=True)
+    targets = prepare_targets(base_path, sample_name)
 
     videos = prepare_video_files(base_path, sample_name)
     sample_data = combine_with_video_features(targets, videos)
