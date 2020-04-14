@@ -236,6 +236,8 @@ def get_samples_dict(base_path, preprocessing_func):
 def get_samples_frame(base_path, preprocessing_func):
     sample_dirs = os.listdir(base_path)
     sample_dirs.sort()
+    if '.DS_Store' in sample_dirs:
+        sample_dirs.remove('.DS_Store')
 
     dfs = []
     for sample in sample_dirs:
