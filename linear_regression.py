@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.kernel_ridge import KernelRidge
+from keras.losses import CategoricalCrossentropy
 from sklearn.svm import SVR
 from sklearn.metrics import mean_squared_error as mse
 from scipy.special import softmax
@@ -105,40 +106,20 @@ csv = pd.read_csv(TRAINING_DATA)
 x = csv[FEATURE_COLUMNS]
 targets = csv[TARGET_COLUMNS]
 
-# svr_gang = {}
-# for t_c in TARGET_COLUMNS:
-#     targets = csv[t_c]
-#     svr_gang[t_c] = SVR().fit(x, targets)
-
 #-----------------------------------------------------------------------
 
 test_csv = pd.read_csv(TESTING_DATA)
+loss = CategoricalCrossentropy(from_logits=True)
 
 x = test_csv[FEATURE_COLUMNS]
 targets = test_csv[TARGET_COLUMNS].to_numpy()
 
 preds = lin_reg.predict(x)
-mse_lin = cross_entropy(targets, preds)
-print("Mean Squared Error for simple linear regression is: " + str(mse_lin))
+lin_reg_loss = float(loss(targets, preds))
+print("loss for simple linear regression is: " + str(lin_reg_loss))
 
 preds = ker_lin_reg.predict(x)
-mse_lin = cross_entropy(targets, preds)
-print("Mean Squared Error for ridge linear regression is: " + str(mse_lin))
-#ker_lin_reg
-
-# preds_gang = {}
-# for t_c in TARGET_COLUMNS:
-#     preds_gang[t_c] = svr_gang[t_c].predict(x)
-# preds = []
-# len_preds = len(preds_gang[TARGET_COLUMNS[0]])
-# for i in range(len_preds):
-#     new_pred = []
-#     for col in TARGET_COLUMNS:
-#         new_pred.append(preds_gang[col][i])
-#     preds.append(np.array(new_pred))
-# preds = np.array(preds)
-# preds = softmax(preds, axis=1)
-# mse_svr = mse(targets, preds)
-# print("Mean Squared Error for svr linear regression is: " + str(mse_svr))
+kernal_ridge_loss = float(loss(targets, preds))
+print("loss for kernel ridge linear regression is: " + str(kernal_ridge_loss))
 
 print(0)
