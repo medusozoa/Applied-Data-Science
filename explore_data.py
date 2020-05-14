@@ -13,6 +13,10 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
+import matplotlib.font_manager
+from collections import Counter
 
 # get train dataframe
 sample_dirs = os.listdir(TRAIN_PATH)
@@ -61,6 +65,7 @@ mins = []
 maxs = []
 standard_devs = []
 posture_times = []
+posture_tally = []
 
 for posture in postures:
     posture_accel_df = acceleration_df[posture_label==posture]
@@ -73,6 +78,7 @@ for posture in postures:
         # record how long each posture takes
         t = len(posture_i)
         posture_time.append(t)
+        posture_tally.append(posture)
 
     mean_posture_time = np.mean(posture_time)
     print("mean time for %s:" % posture,mean_posture_time)
@@ -82,11 +88,14 @@ for posture in postures:
     mins.append(round(min(posture_time)))
     maxs.append(round(max(posture_time)))
     posture_times.append(posture_time)
+    
 
 
 
 
 plt.rcdefaults()
+plt.rcParams["font.sans-serif"] = ["Lucida Grande"]
+plt.rcParams["font.weight"] = "light"
 fig, ax = plt.subplots()
 y_pos = np.arange(len(postures))
 
@@ -139,29 +148,28 @@ for i,category in enumerate(['2a_',"3p_","1t_"]):
                     patch_artist=True,
  					boxprops=dict(facecolor=colour, color=colour),
              		capprops=dict(color=colour),
-             		whiskerprops=dict(color=colour),
-                    
+             		whiskerprops=dict(color=colour), 
              		medianprops=dict(color=dcolour),
                     meanprops = dict(marker='o', markeredgecolor=dcolour,markerfacecolor=dcolour))
 
+# legend
+colours = ['#f4a261','#e76f51','#e9c46a']
+darkercolours = ['#c58654','#b65840','#c1a359']
+custom_block = [Patch(facecolor=colours[2], edgecolor=colours[2]),
+                Patch(facecolor=colours[0], edgecolor=colours[0]),
+                Patch(facecolor=colours[1], edgecolor=colours[1]),
+                Line2D([0], [0], marker='o',color=darkercolours[1], lw=0),
+                Line2D([0],[0],marker='|',color=darkercolours[1],lw=0)]
+ax.legend(custom_block, ['Transition','Action', 'Posture','Mean','Median'])
 
-# bplots = ax.boxplot(posture_times,0,'rh',0,positions=df.index,showfliers=False,patch_artist=True,
-# 					boxprops=dict(facecolor=colours, color=colours),
-#             		capprops=dict(color=colours),
-#             		whiskerprops=dict(color=colours),
-#             		medianprops=dict(color=colours))
-
-
-# for bplot in bplots:
-#     for patch, color in zip(bplot['boxes'], colours):
-#         patch.set_facecolor(color)
+# fig, ax = plt.subplots()
 
 ax.set_yticks(y_pos)
 ax.set_yticklabels(postures)
 ax.invert_yaxis()  # labels read top-to-bottom
 ax.set_xlabel('Duration (seconds)')
-ax.set_title('Average posture duration of training set')
-plt.savefig('figures/posture_duration.png')
+ax.set_title('Average Duration of Activities from the Training Set')
+plt.savefig('figures/posture_duration.png',bbox_inches='tight')
 plt.clf()
 
 # plt.rcdefaults()
@@ -169,3 +177,50 @@ plt.clf()
 # y_pos = np.arange(len(postures))
 # ax.boxplot(y_pos,posture_times)
 # plt.savefig('figures/posture_duration_boxplot.png')
+
+# print(posture_tally)
+posture_type = ['2a_',"3p_","1t_"]
+colours = ['#f4a261','#e76f51','#e9c46a']
+counts = Counter(posture_tally)
+labels, values = zip(*counts.items())
+# sort your values in descending order
+indSort = np.argsort(values)[::-1]
+# rearrange your data
+labels = np.array(labels)[indSort]
+values = np.array(values)[indSort]
+print(labels)
+print(values)
+indexes = np.arange(len(labels))
+postures2 = ['Ascend','Descend', 'Jump', 'Loadwalk', 'Walk','Bent', 'Kneel', 'Lie', 'Sit', 'Squat', 'Stand','Bend', 'Kneel to Stand', 'Lie to Sit', 'Sit to Lie', 'Sit to Stand', 'Stand to Kneel', 'Stand to Sit','Straighten', 'Turn']
+postures2 = np.array(postures2)[indSort]
+bar_width = 0.35
+
+for i,posture in enumerate(labels):
+    if posture in p_:
+        colour = '#e76f51'
+        plt.barh(postures2[i], values[i],color=colour)
+    else:
+        continue
+
+for i,posture in enumerate(labels):
+    if posture in a_:
+        colour = '#f4a261'
+        plt.barh(postures2[i], values[i],color=colour)
+    else:
+        continue
+
+for i,posture in enumerate(labels):
+    if posture in t_:
+        colour = '#e9c46a'
+        plt.barh(postures2[i], values[i],color=colour)
+    else:
+        continue
+
+custom_block = [Patch(facecolor=colours[2], edgecolor=colours[2]),
+                Patch(facecolor=colours[0], edgecolor=colours[0]),
+                Patch(facecolor=colours[1], edgecolor=colours[1]),
+                ]
+plt.legend(custom_block, ['Transition','Action', 'Posture'])
+
+plt.title('Histogram of Activity Counts')
+plt.savefig('figures/posture_histogram.png',bbox_inches='tight')
